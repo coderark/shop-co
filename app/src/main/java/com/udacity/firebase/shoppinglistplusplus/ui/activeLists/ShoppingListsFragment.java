@@ -1,7 +1,9 @@
 package com.udacity.firebase.shoppinglistplusplus.ui.activeLists;
 
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,7 +11,15 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.udacity.firebase.shoppinglistplusplus.R;
+import com.udacity.firebase.shoppinglistplusplus.model.ShoppingList;
+import com.udacity.firebase.shoppinglistplusplus.ui.activeListDetails.ActiveListDetailsActivity;
+import com.udacity.firebase.shoppinglistplusplus.utils.Constants;
 
 
 /**
@@ -19,6 +29,8 @@ import com.udacity.firebase.shoppinglistplusplus.R;
  */
 public class ShoppingListsFragment extends Fragment {
     private ListView mListView;
+    private ActiveListAdapter mFirebaseListAdapter;
+    private String mEncodedEmail;
 
     public ShoppingListsFragment() {
         /* Required empty public constructor */
@@ -47,6 +59,7 @@ public class ShoppingListsFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mEncodedEmail=PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(Constants.KEY_ENCODED_EMAIL, null);
         if (getArguments() != null) {
         }
     }
@@ -59,6 +72,20 @@ public class ShoppingListsFragment extends Fragment {
          */
         View rootView = inflater.inflate(R.layout.fragment_shopping_lists, container, false);
         initializeScreen(rootView);
+        final DatabaseReference ref=FirebaseDatabase.getInstance().getReference().child(Constants.FIREBASE_LOCATION_ACTIVE_LIST);
+        ref.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                mFirebaseListAdapter=new ActiveListAdapter(getActivity(), ShoppingList.class, R.layout.single_active_list, ref, mEncodedEmail);
+                mListView.setAdapter(mFirebaseListAdapter);
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
 
         /**
          * Set interactive bits, such as click events and adapters
@@ -66,9 +93,13 @@ public class ShoppingListsFragment extends Fragment {
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
+                Intent intent=new Intent(getActivity(), ActiveListDetailsActivity.class);
+                String listId=mFirebaseListAdapter.getRef(position).getKey();
+                intent.putExtra(Constants.KEY_LIST_ID, listId);
+                startActivity(intent);
             }
         });
+
 
         return rootView;
     }
@@ -76,6 +107,9 @@ public class ShoppingListsFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (mFirebaseListAdapter!=null){
+            mFirebaseListAdapter.cleanup();
+        }
     }
 
 
@@ -84,5 +118,6 @@ public class ShoppingListsFragment extends Fragment {
      */
     private void initializeScreen(View rootView) {
         mListView = (ListView) rootView.findViewById(R.id.list_view_active_lists);
+
     }
 }

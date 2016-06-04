@@ -1,22 +1,31 @@
 package com.udacity.firebase.shoppinglistplusplus.ui;
 
 import android.app.DialogFragment;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.udacity.firebase.shoppinglistplusplus.R;
 import com.udacity.firebase.shoppinglistplusplus.ui.activeLists.AddListDialogFragment;
 import com.udacity.firebase.shoppinglistplusplus.ui.activeLists.ShoppingListsFragment;
 import com.udacity.firebase.shoppinglistplusplus.ui.meals.AddMealDialogFragment;
 import com.udacity.firebase.shoppinglistplusplus.ui.meals.MealsFragment;
+import com.udacity.firebase.shoppinglistplusplus.utils.Constants;
 
 /**
  * Represents the home screen of the app which
@@ -24,15 +33,32 @@ import com.udacity.firebase.shoppinglistplusplus.ui.meals.MealsFragment;
  */
 public class MainActivity extends BaseActivity {
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
+    String mEncodedEmail;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        final SharedPreferences sp= PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        mEncodedEmail=sp.getString(Constants.KEY_ENCODED_EMAIL, null);
+        DatabaseReference ref= FirebaseDatabase.getInstance().getReference().child(Constants.FIREBASE_LOCATION_USER_ACCOUNTS).child(mEncodedEmail).child(Constants.KEY_USER_NAME);
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                String formattedTitle=dataSnapshot.getValue().toString().split(" ")[0]+"'s Lists";
+                setTitle(formattedTitle);
+            }
 
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d(LOG_TAG, databaseError.getMessage());
+            }
+        });
         /**
          * Link layout elements from XML and setup the toolbar
          */
+
         initializeScreen();
     }
 

@@ -3,7 +3,9 @@ package com.udacity.firebase.shoppinglistplusplus.ui.activeLists;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -13,13 +15,18 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.udacity.firebase.shoppinglistplusplus.R;
+import com.udacity.firebase.shoppinglistplusplus.model.ShoppingList;
+import com.udacity.firebase.shoppinglistplusplus.utils.Constants;
 
 /**
  * Adds a new shopping list
  */
 public class AddListDialogFragment extends DialogFragment {
     EditText mEditTextListName;
+    String mEncodedEmail;
 
     /**
      * Public static constructor that creates fragment and
@@ -38,6 +45,8 @@ public class AddListDialogFragment extends DialogFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        SharedPreferences sp= PreferenceManager.getDefaultSharedPreferences(getActivity());
+        mEncodedEmail=sp.getString(Constants.KEY_ENCODED_EMAIL, null);
     }
 
     /**
@@ -89,7 +98,13 @@ public class AddListDialogFragment extends DialogFragment {
      * Add new active list
      */
     public void addShoppingList() {
-
+        DatabaseReference ref=FirebaseDatabase.getInstance().getReference();
+        String listName=mEditTextListName.getText().toString();
+        String owner=mEncodedEmail;
+        if (!listName.equals("")){
+            ShoppingList shoppingList=new ShoppingList(listName, owner);
+            ref.child(Constants.FIREBASE_LOCATION_ACTIVE_LIST).push().setValue(shoppingList);
+        }
     }
 
 }
